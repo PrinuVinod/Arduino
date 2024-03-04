@@ -1,77 +1,49 @@
 #include <Servo.h>
 
-// Define servo motor
-Servo myServo;
+Servo servoX;
+Servo servoY;
 
-// Define servo motor pin
-int servoPin = 9;
-
-// Define LED pin
-int ledPin = 13;
-
-// Variable to store received command
-String command;
+bool servosMoving = false;
+bool clockwiseMovement = true;
 
 void setup() {
-  // Attach the servo to the specified pin
-  myServo.attach(servoPin);
-
-  // Initialize LED pin as an output
-  pinMode(ledPin, OUTPUT);
-
-  // Start Serial communication
   Serial.begin(9600);
+  servoX.attach(9);
+  servoY.attach(10);
+  
+  servoX.write(180);
+  servoY.write(180);
 }
 
 void loop() {
-  // Check if there is data available to read
   if (Serial.available() > 0) {
-    // Read the incoming command
-    command = Serial.readStringUntil('\n');
+    String data = Serial.readStringUntil('\n');
+    
+    Serial.println(data);
 
-    // Process the command
-    if (command == "WeedDetected") {
-      // Your code for servo and LED control when weed is detected
-      for (int angle = 0; angle <= 360; angle++) {
-        myServo.write(angle);
-        delay(10);
-      }
+    int xCoord = data.substring(0, data.indexOf(',')).toInt();
+    int yCoord = data.substring(data.indexOf(',') + 1).toInt();
 
-      // Pause at the maximum rotation position
+    if (!servosMoving) {
+      moveServo(servoX, clockwiseMovement ? 360 : 0);
+      moveServo(servoY, clockwiseMovement ? 360 : 0);
+      servosMoving = true;
+    }
+
+    if (servosMoving && clockwiseMovement) {
+      moveServo(servoX, 0);
+      moveServo(servoY, 0);
       delay(1000);
-
-      // Rotate the servo counterclockwise
-      for (int angle = 360; angle >= 0; angle--) {
-        myServo.write(angle);
-        delay(10);
-      }
-
-      // Pause at the minimum rotation position
-      delay(1000);
-
-      // Blink the LED to indicate weed detection
-      digitalWrite(ledPin, HIGH);
-      delay(500);
-      digitalWrite(ledPin, LOW);
+      clockwiseMovement = false;
+    } else {
+      moveServo(servoX, 180);
+      moveServo(servoY, 180);
     }
   }
-  
-  // Your existing servo and LED control code (without weed detection)
-  // Rotate the servo clockwise
-  for (int angle = 0; angle <= 360; angle++) {
-    myServo.write(angle);
-    delay(10);
-  }
+}
 
-  // Pause at the maximum rotation position
-  delay(1000);
-
-  // Rotate the servo counterclockwise
-  for (int angle = 360; angle >= 0; angle--) {
-    myServo.write(angle);
-    delay(10);
-  }
-
-  // Pause at the minimum rotation position
-  delay(1000);
+void moveServo(Servo &servo, int angle) {
+  angle = constrain(angle, 0, 360);
+  servo.write(angle);
+  delay(15);
 }
